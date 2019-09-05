@@ -83,9 +83,10 @@ class StubFileNavigator implements FileNavigator {
   private String fileName;
   private int line;
   private int column;
+  private String newLocator;
 
   @Override
-  public void findAndNavigate(String fileName, int line, int column) {
+  public void findAndNavigate(String fileName, int line, int column, String newLocator) {
     this.fileName = fileName;
     this.line = line;
     this.column = column;

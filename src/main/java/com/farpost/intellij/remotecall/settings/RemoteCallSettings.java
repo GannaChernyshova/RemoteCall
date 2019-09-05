@@ -3,14 +3,14 @@ package com.farpost.intellij.remotecall.settings;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
-import com.intellij.openapi.components.StoragePathMacros;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.Nullable;
 
 @State(
   name = "RemoteCall",
   storages = {@Storage(
-    file = StoragePathMacros.APP_CONFIG + "/remotecall.xml")})
+    //file = StoragePathMacros.APP_CONFIG +
+            "/remotecall.xml")})
 public class RemoteCallSettings implements PersistentStateComponent<RemoteCallSettings> {
   private int myPortNumber = 8091;
   private boolean myAllowRequestsFromLocalhostOnly = true;

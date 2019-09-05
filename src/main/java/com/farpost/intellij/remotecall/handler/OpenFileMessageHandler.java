@@ -10,6 +10,7 @@ import static java.util.regex.Pattern.compile;
 
 public class OpenFileMessageHandler implements MessageHandler {
   private static final Pattern COLUMN_PATTERN = compile("[:#](\\d+)[:#]?(\\d*)$");
+  private static final Pattern LOCATOR_PATTERN = compile("[:#](\\d+)[:#]?(\\D*)");
   private final FileNavigator fileNavigator;
 
 
@@ -19,8 +20,12 @@ public class OpenFileMessageHandler implements MessageHandler {
 
   public void handleMessage(String message) {
     Matcher matcher = COLUMN_PATTERN.matcher(message);
+    //TODO: verify locator pattern (example: button#id-1 or html > body > div > div > div > div > div > div:nth-child(1) > div > div )
+    //http://localhost:8091/?message=MainPageWithFindBy.java:33:button#id-1 in request
+    Matcher locatorMatcher = LOCATOR_PATTERN.matcher(message);
     int line = 0;
     int column = 0;
+    String newLocator = "";
 
     if (matcher.find()) {
 
@@ -31,6 +36,10 @@ public class OpenFileMessageHandler implements MessageHandler {
       }
     }
 
-    fileNavigator.findAndNavigate(matcher.replaceAll(""), line, column);
+    if (locatorMatcher.find()) {
+      newLocator = matcher.group(2);
+    }
+
+    fileNavigator.findAndNavigate(matcher.replaceAll(""), line, column, newLocator);
   }
 }

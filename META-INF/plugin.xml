@@ -29,4 +29,10 @@
                         serviceImplementation="com.farpost.intellij.remotecall.settings.RemoteCallSettings"/>
     <applicationConfigurable instance="com.farpost.intellij.remotecall.settings.RemoteCallConfigurable"/>
   </extensions>
+  <actions>
+    <action id="updateBy" class="com.farpost.intellij.remotecall.updater.UpdateElement" text="update-element">
+      <keyboard-shortcut keymap="$default" first-keystroke="B" second-keystroke="Y"/>
+      <add-to-group group-id="ToolsMenu" anchor="first"/>
+    </action>
+  </actions>
 </idea-plugin>
