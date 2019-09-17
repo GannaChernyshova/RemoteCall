@@ -1,6 +1,7 @@
 package com.farpost.intellij.remotecall.notifier;
 
 import com.farpost.intellij.remotecall.handler.MessageHandler;
+import com.farpost.intellij.remotecall.model.RequestDto;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,14 +91,14 @@ public class SocketMessageNotifierTest {
 
 class StubMessageHandler implements MessageHandler {
 
-  private final BlockingQueue<String> messages = new LinkedBlockingQueue<String>();
+  private final BlockingQueue<RequestDto> messages = new LinkedBlockingQueue<>();
 
   @Override
-  public void handleMessage(String message) {
+  public void handleMessage(RequestDto message) {
     messages.add(message);
   }
 
-  public String getLastMessage() {
+  public RequestDto getLastMessage() {
     try {
       return messages.poll(1, TimeUnit.SECONDS);
     }

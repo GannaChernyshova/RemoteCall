@@ -1,5 +1,6 @@
 package com.farpost.intellij.remotecall.handler;
 
+import com.farpost.intellij.remotecall.model.RequestDto;
 import com.farpost.intellij.remotecall.utils.FileNavigator;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -10,26 +11,31 @@ public class OpenFileMessageHandlerTest {
 
   private static OpenFileMessageHandler handler;
   private static StubFileNavigator fileNavigator;
+  private static RequestDto request;
 
   @BeforeClass
   public static void setUp() {
     fileNavigator = new StubFileNavigator();
     handler = new OpenFileMessageHandler(fileNavigator);
+    request = new RequestDto();
   }
 
   @Test
   public void handlerShouldExtractFilenameAndLineFromMessage() {
-    handler.handleMessage("FileName.java:80");
+    request.setTarget("FileName.java:80");
+    handler.handleMessage(request);
     assertEquals("FileName.java", fileNavigator.getFileName());
     assertEquals(79, fileNavigator.getLine());
     assertEquals(0, fileNavigator.getColumn());
 
-    handler.handleMessage("FileName.java");
+    request.setTarget("FileName.java");
+    handler.handleMessage(request);
     assertEquals("FileName.java", fileNavigator.getFileName());
     assertEquals(0, fileNavigator.getLine());
     assertEquals(0, fileNavigator.getColumn());
 
-    handler.handleMessage("FileName.java:error");
+    request.setTarget("FileName.java:error");
+    handler.handleMessage(request);
     assertEquals("FileName.java:error", fileNavigator.getFileName());
     assertEquals(0, fileNavigator.getLine());
     assertEquals(0, fileNavigator.getColumn());
@@ -37,17 +43,20 @@ public class OpenFileMessageHandlerTest {
 
   @Test
   public void handlerShouldExtractFileNameFromFullWindowsPath() {
-    handler.handleMessage("c:\\FileName.java");
+    request.setTarget("c:\\FileName.java");
+    handler.handleMessage(request);
     assertEquals("c:\\FileName.java", fileNavigator.getFileName());
     assertEquals(0, fileNavigator.getLine());
     assertEquals(0, fileNavigator.getColumn());
 
-    handler.handleMessage("c:\\FileName.java:80");
+    request.setTarget("c:\\FileName.java:80");
+    handler.handleMessage(request);
     assertEquals("c:\\FileName.java", fileNavigator.getFileName());
     assertEquals(79, fileNavigator.getLine());
     assertEquals(0, fileNavigator.getColumn());
 
-    handler.handleMessage("c:\\FileName.java:80:20");
+    request.setTarget("c:\\FileName.java:80:20");
+    handler.handleMessage(request);
     assertEquals("c:\\FileName.java", fileNavigator.getFileName());
     assertEquals(79, fileNavigator.getLine());
     assertEquals(19, fileNavigator.getColumn());
@@ -55,7 +64,8 @@ public class OpenFileMessageHandlerTest {
 
   @Test
   public void handlerShouldExtractLineNumberAfterHashCharacter() {
-    handler.handleMessage("FileName.java#80");
+    request.setTarget("FileName.java#80");
+    handler.handleMessage(request);
     assertEquals("FileName.java", fileNavigator.getFileName());
     assertEquals(79, fileNavigator.getLine());
     assertEquals(0, fileNavigator.getColumn());
@@ -63,7 +73,8 @@ public class OpenFileMessageHandlerTest {
 
   @Test
   public void handlerShouldExtractLineAndColumnNumberAfterColon() {
-    handler.handleMessage("FileName.java#80#20");
+    request.setTarget("FileName.java#80#20");
+    handler.handleMessage(request);
     assertEquals("FileName.java", fileNavigator.getFileName());
     assertEquals(79, fileNavigator.getLine());
     assertEquals(19, fileNavigator.getColumn());
@@ -71,7 +82,8 @@ public class OpenFileMessageHandlerTest {
 
   @Test
   public void handlerShouldExtractLineAndColumnNumberAfterHashCharacter() {
-    handler.handleMessage("FileName.java:80:20");
+    request.setTarget("FileName.java:80:20");
+    handler.handleMessage(request);
     assertEquals("FileName.java", fileNavigator.getFileName());
     assertEquals(79, fileNavigator.getLine());
     assertEquals(19, fileNavigator.getColumn());
@@ -86,7 +98,7 @@ class StubFileNavigator implements FileNavigator {
   private String newLocator;
 
   @Override
-  public void findAndNavigate(String fileName, int line, int column, String newLocator) {
+  public void findAndNavigate(String fileName, int line, int column, RequestDto request) {
     this.fileName = fileName;
     this.line = line;
     this.column = column;

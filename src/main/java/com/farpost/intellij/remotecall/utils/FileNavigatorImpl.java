@@ -1,21 +1,18 @@
 package com.farpost.intellij.remotecall.utils;
 
+import com.farpost.intellij.remotecall.UserKeys;
+import com.farpost.intellij.remotecall.model.RequestDto;
 import com.google.common.base.Joiner;
 import com.intellij.ide.DataManager;
-import com.intellij.openapi.actionSystem.ActionManager;
-import com.intellij.openapi.actionSystem.ActionPlaces;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.Presentation;
+import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.openapi.wm.WindowManager;
-import com.intellij.psi.PsiAnnotation;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 
@@ -29,55 +26,61 @@ public class FileNavigatorImpl implements FileNavigator {
   private static final Joiner pathJoiner = Joiner.on("/");
 
   @Override
-  public void findAndNavigate(final String fileName, final int line, final int column, String newLocator) {
-    ApplicationManager.getApplication().invokeLater(new Runnable() {
-      public void run() {
-        Map<Project, Collection<VirtualFile>> foundFilesInAllProjects = new HashMap<Project, Collection<VirtualFile>>();
-        Project[] projects = ProjectManager.getInstance().getOpenProjects();
+  public void findAndNavigate(final String fileName, final int line, final int column, RequestDto request) {
+    ApplicationManager.getApplication().invokeLater(() -> {
+      Map<Project, Collection<VirtualFile>> foundFilesInAllProjects = new HashMap<>();
+      // collect all currently opened projects
+      Project[] projects = ProjectManager.getInstance().getOpenProjects();
 
-        for (Project project : projects) {
-          foundFilesInAllProjects
-            .put(project, FilenameIndex.getVirtualFilesByName(project, new File(fileName).getName(), GlobalSearchScope.allScope(project)));
-        }
+      // collect target file path in every available project
+      for (Project project : projects) {
+        foundFilesInAllProjects
+          .put(project, FilenameIndex.getVirtualFilesByName(project, new File(fileName).getName(), GlobalSearchScope.allScope(project)));
+      }
 
-        Deque<String> pathElements = splitPath(fileName);
-        String variableFileName = pathJoiner.join(pathElements);
+      Deque<String> pathElements = splitPath(fileName);
+      String variableFileName = pathJoiner.join(pathElements);
 
-        while (pathElements.size() > 0) {
-          for (Project project : foundFilesInAllProjects.keySet()) {
-            for (VirtualFile directFile : foundFilesInAllProjects.get(project)) {
-              if (directFile.getPath().endsWith(variableFileName)) {
-                log.info("Found file " + directFile.getName());
-                navigate(project, directFile, line, column);
-                updateLocator(newLocator);
-                return;
-              }
+      while (!pathElements.isEmpty()) {
+        for (Project project : foundFilesInAllProjects.keySet()) {
+          for (VirtualFile directFile : foundFilesInAllProjects.get(project)) {
+            if (directFile.getPath().endsWith(variableFileName)) {
+              log.info("Found file " + directFile.getName());
+              navigate(project, directFile, line, column);
+              IdeFocusManager.getInstance(project).doWhenFocusSettlesDown(() -> updateLocator(request));
+              return;
             }
           }
-          pathElements.pop();
-          variableFileName = pathJoiner.join(pathElements);
         }
+        pathElements.pop();
+        variableFileName = pathJoiner.join(pathElements);
       }
     });
   }
 
 
   //TODO: pass somehow locator value to action event
-  public static void updateLocator(String locator) {
+  public static void updateLocator(RequestDto request) {
     ActionManager am = ActionManager.getInstance();
-    am.getAction("updateBy").actionPerformed(new AnActionEvent(null, DataManager.getInstance().getDataContext(),
-                                                                   ActionPlaces.UNKNOWN, new Presentation(),
-                                                                   ActionManager.getInstance(), 0));
+    DataManager dm = DataManager.getInstance();
+
+    dm.getDataContextFromFocusAsync().onSuccess(context-> {
+      dm.saveInDataContext(context, UserKeys.CUSTOM_DATA, request);
+      AnActionEvent event = new AnActionEvent(null, context,
+                                              ActionPlaces.UNKNOWN, new Presentation(),
+                                              ActionManager.getInstance(), 0);
+      am.getAction("updateBy").actionPerformed(event);
+    });
   }
 
-  public static PsiAnnotation createAnnotation(final String annotation, final PsiElement context) {
-    final PsiElementFactory factory = PsiElementFactory.SERVICE.getInstance(context.getProject());
-    return factory.createAnnotationFromText(annotation, context);
-  }
-
+                                                                /**
+   *
+   * @param filePath
+   * @return
+   */
   private static Deque<String> splitPath(String filePath) {
     File file = new File(filePath);
-    Deque<String> pathParts = new ArrayDeque<String>();
+    Deque<String> pathParts = new ArrayDeque<>();
     pathParts.push(file.getName());
     while ((file = file.getParentFile()) != null && !file.getName().isEmpty()) {
       pathParts.push(file.getName());
@@ -86,6 +89,13 @@ public class FileNavigatorImpl implements FileNavigator {
     return pathParts;
   }
 
+  /**
+   * Open target project file and set focus to that window
+   * @param project - target project
+   * @param file - target file
+   * @param line - line number
+   * @param column - position
+   */
   private static void navigate(Project project, VirtualFile file, int line, int column) {
     final OpenFileDescriptor openFileDescriptor = new OpenFileDescriptor(project, file, line, column);
     if (openFileDescriptor.canNavigate()) {
