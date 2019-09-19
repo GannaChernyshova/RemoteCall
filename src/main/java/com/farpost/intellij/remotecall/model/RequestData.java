@@ -3,14 +3,14 @@ package com.farpost.intellij.remotecall.model;
 import java.util.Objects;
 
 /**
- *
+ * Request model
  */
-public class RequestDto {
+public class RequestData {
 
-  public RequestDto() {
+  public RequestData() {
   }
 
-  public RequestDto(String target, String oldLocator, String newLocator) {
+  public RequestData(String target, String oldLocator, String newLocator) {
     this.target = target;
     this.oldLocator = oldLocator;
     this.newLocator = newLocator;
@@ -48,7 +48,7 @@ public class RequestDto {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    RequestDto dto = (RequestDto)o;
+    RequestData dto = (RequestData)o;
     return target.equals(dto.target) && oldLocator.equals(dto.oldLocator) && newLocator.equals(dto.newLocator);
   }
 
@@ -59,6 +59,6 @@ public class RequestDto {
 
   @Override
   public String toString() {
-    return "RequestDto{" + "target='" + target + '\'' + ", oldLocator='" + oldLocator + '\'' + ", newLocator='" + newLocator + '\'' + '}';
+    return "RequestData{" + "target='" + target + '\'' + ", oldLocator='" + oldLocator + '\'' + ", newLocator='" + newLocator + '\'' + '}';
   }
 }

@@ -1,7 +1,14 @@
 package com.farpost.intellij.remotecall.handler;
 
-import com.farpost.intellij.remotecall.model.RequestDto;
+import com.farpost.intellij.remotecall.UserKeys;
+import com.farpost.intellij.remotecall.model.RequestData;
 import com.farpost.intellij.remotecall.utils.FileNavigator;
+import com.intellij.ide.DataManager;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionPlaces;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.Presentation;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.text.StringUtil;
 
 import java.util.regex.Matcher;
@@ -12,7 +19,9 @@ import static java.util.regex.Pattern.compile;
 /**
  *
  */
-public class OpenFileMessageHandler implements MessageHandler {
+public class OpenFileMessageHandler implements RequestHandler {
+
+  private static final Logger log = Logger.getInstance(OpenFileMessageHandler.class);
   private static final Pattern COLUMN_PATTERN = compile("[:#](\\d+)[:#]?(\\d*)$");
   private final FileNavigator fileNavigator;
 
@@ -21,10 +30,8 @@ public class OpenFileMessageHandler implements MessageHandler {
     this.fileNavigator = fileNavigator;
   }
 
-  public void handleMessage(RequestDto request) {
+  public void handle(RequestData request) {
     Matcher matcher = COLUMN_PATTERN.matcher(request.getTarget());
-    //TODO: verify locator pattern (example: button#id-1 or html > body > div > div > div > div > div > div:nth-child(1) > div > div )
-    //http://localhost:8091/?message=MainPageWithFindBy.java:33:button#id-1 in request
 
     int line = 0;
     int column = 0;
@@ -39,6 +46,21 @@ public class OpenFileMessageHandler implements MessageHandler {
     //remove extension from file name
     request.setTarget(request.getTarget().substring(0, request.getTarget().indexOf('.')));
     // navigate to file
-    fileNavigator.findAndNavigate(matcher.replaceAll(""), line, column, request);
+    fileNavigator.findAndNavigate(matcher.replaceAll(""), line, column)
+    .onSuccess(it -> updateLocator(request))
+    .onError(t -> log.warn(t.getMessage()));
+  }
+
+  private static void updateLocator(RequestData request) {
+    ActionManager am = ActionManager.getInstance();
+    DataManager dm = DataManager.getInstance();
+
+    dm.getDataContextFromFocusAsync().onSuccess(context-> {
+      dm.saveInDataContext(context, UserKeys.CUSTOM_DATA, request);
+      AnActionEvent event = new AnActionEvent(null, context,
+                                              ActionPlaces.UNKNOWN, new Presentation(),
+                                              ActionManager.getInstance(), 0);
+      am.getAction("updateBy").actionPerformed(event);
+    });
   }
 }

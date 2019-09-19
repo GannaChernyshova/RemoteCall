@@ -1,7 +1,7 @@
 package com.farpost.intellij.remotecall.updater;
 
 import com.farpost.intellij.remotecall.UserKeys;
-import com.farpost.intellij.remotecall.model.RequestDto;
+import com.farpost.intellij.remotecall.model.RequestData;
 import com.farpost.intellij.remotecall.utils.PsiClassUtil;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ApplicationManager;
@@ -27,7 +27,7 @@ public class UpdateElement extends AnAction {
     //Messages.showMessageDialog(e.getProject(), "some message info", "PSI Info", null);
 
     final PsiJavaFile element = (PsiJavaFile)e.getData(CommonDataKeys.PSI_FILE);
-    final RequestDto data = new DataContextWrapper(e.getDataContext()).getUserData(UserKeys.CUSTOM_DATA);
+    final RequestData data = new DataContextWrapper(e.getDataContext()).getUserData(UserKeys.CUSTOM_DATA);
 
     if(element == null){
       log.error("Failed to get target file data");

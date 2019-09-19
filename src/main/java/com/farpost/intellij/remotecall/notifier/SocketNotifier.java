@@ -1,8 +1,9 @@
 package com.farpost.intellij.remotecall.notifier;
 
-import com.farpost.intellij.remotecall.handler.MessageHandler;
-import com.farpost.intellij.remotecall.model.RequestDto;
+import com.farpost.intellij.remotecall.handler.RequestHandler;
+import com.farpost.intellij.remotecall.model.RequestData;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.util.net.HTTPMethod;
 import org.apache.commons.net.io.Util;
 
 import java.io.BufferedReader;
@@ -19,20 +20,20 @@ import static java.net.URLDecoder.decode;
 /**
  *
  */
-public class SocketMessageNotifier implements MessageNotifier {
+public class SocketNotifier implements RequestNotifier {
 
-  private static final Logger log = Logger.getInstance(SocketMessageNotifier.class);
-  private final Collection<MessageHandler> messageHandlers = new HashSet<>();
+  private static final Logger log = Logger.getInstance(SocketNotifier.class);
+  private final Collection<RequestHandler> handlers = new HashSet<>();
   private final ServerSocket serverSocket;
   private static final String CRLF = "\r\n";
   private static final String NL = "\n";
 
-  public SocketMessageNotifier(ServerSocket serverSocket) {
+  public SocketNotifier(ServerSocket serverSocket) {
     this.serverSocket = serverSocket;
   }
 
-  public void addMessageHandler(MessageHandler handler) {
-    messageHandlers.add(handler);
+  public void addRequestHandler(RequestHandler handler) {
+    handlers.add(handler);
   }
 
   public void run() {
@@ -73,25 +74,25 @@ public class SocketMessageNotifier implements MessageNotifier {
 
           StringTokenizer tokenizer = new StringTokenizer(requestString.toString());
           String method = tokenizer.hasMoreElements() ? tokenizer.nextToken() : "";
-          if (!method.equals("GET")) {
-            log.warn("Only GET requests allowed");
+          if (!method.equals(HTTPMethod.POST.name())) {
+            log.warn("Only POST requests allowed");
             continue;
           }
 
           log.info("Received request " + requestString);
           Map<String, String> parameters = getParametersFromUrl(tokenizer.nextToken());
 
-          RequestDto dto = new RequestDto();
+          RequestData data = new RequestData();
 
-          String message = parameters.get("message") != null ? decode(parameters.get("message").trim(), StandardCharsets.UTF_8.name()) : "";
+          String message = parameters.get("target") != null ? decode(parameters.get("target").trim(), StandardCharsets.UTF_8.name()) : "";
           String oldLocator = parameters.get("oldLocator") != null ? decode(parameters.get("oldLocator").trim(), StandardCharsets.UTF_8.name()) : "";
           String newLocator = parameters.get("newLocator") != null ? decode(parameters.get("newLocator").trim(), StandardCharsets.UTF_8.name()) : "";
-          dto.setTarget(message);
-          dto.setOldLocator(oldLocator);
-          dto.setNewLocator(newLocator);
+          data.setTarget(message);
+          data.setOldLocator(oldLocator);
+          data.setNewLocator(newLocator);
 
-          log.info("Received dto " + dto);
-          handleMessage(dto);
+          log.info("Received data " + data);
+          handle(data);
         }
         catch (IOException e) {
           log.error("Error", e);
@@ -125,11 +126,11 @@ public class SocketMessageNotifier implements MessageNotifier {
 
   /**
    * Processing incoming request with handler
-   * @param message
+   * @param request
    */
-  private void handleMessage(RequestDto request) {
-    for (MessageHandler handler : messageHandlers) {
-      handler.handleMessage(request);
+  private void handle(RequestData request) {
+    for (RequestHandler handler : handlers) {
+      handler.handle(request);
     }
   }
 }
