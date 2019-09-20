@@ -1,6 +1,7 @@
 package com.farpost.intellij.remotecall.notifier;
 
-import com.farpost.intellij.remotecall.handler.MessageHandler;
+import com.farpost.intellij.remotecall.handler.RequestHandler;
+import com.farpost.intellij.remotecall.model.RequestData;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,8 +26,8 @@ public class SocketMessageNotifierTest {
 
   @Before
   public void setUp() throws IOException {
-    MessageNotifier notifier = createNotifier();
-    notifier.addMessageHandler(messageHandler);
+    SocketNotifier notifier = createNotifier();
+    notifier.addRequestHandler(messageHandler);
 
     notifierThread = new Thread(notifier);
     notifierThread.start();
@@ -67,10 +68,10 @@ public class SocketMessageNotifierTest {
     messageHandler.clear();
   }
 
-  private MessageNotifier createNotifier() throws IOException {
+  private SocketNotifier createNotifier() throws IOException {
     socket = new ServerSocket();
     socket.bind(new InetSocketAddress("localhost", PORT));
-    return new SocketMessageNotifier(socket);
+    return new SocketNotifier(socket);
   }
 
   private static void sendMessage(String message) throws IOException {
@@ -88,16 +89,16 @@ public class SocketMessageNotifierTest {
   }
 }
 
-class StubMessageHandler implements MessageHandler {
+class StubMessageHandler implements RequestHandler {
 
-  private final BlockingQueue<String> messages = new LinkedBlockingQueue<String>();
+  private final BlockingQueue<RequestData> messages = new LinkedBlockingQueue<>();
 
   @Override
-  public void handleMessage(String message) {
+  public void handle(RequestData message) {
     messages.add(message);
   }
 
-  public String getLastMessage() {
+  public RequestData getLastMessage() {
     try {
       return messages.poll(1, TimeUnit.SECONDS);
     }

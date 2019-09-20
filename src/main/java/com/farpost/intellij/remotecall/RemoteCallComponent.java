@@ -1,8 +1,8 @@
 package com.farpost.intellij.remotecall;
 
 import com.farpost.intellij.remotecall.handler.OpenFileMessageHandler;
-import com.farpost.intellij.remotecall.notifier.MessageNotifier;
-import com.farpost.intellij.remotecall.notifier.SocketMessageNotifier;
+import com.farpost.intellij.remotecall.notifier.RequestNotifier;
+import com.farpost.intellij.remotecall.notifier.SocketNotifier;
 import com.farpost.intellij.remotecall.settings.RemoteCallSettings;
 import com.farpost.intellij.remotecall.utils.FileNavigatorImpl;
 import com.intellij.openapi.application.ApplicationManager;
@@ -36,17 +36,14 @@ public class RemoteCallComponent implements ApplicationComponent {
       log.info("Listening " + port);
     }
     catch (IOException e) {
-      ApplicationManager.getApplication().invokeLater(new Runnable() {
-        public void run() {
-          Messages.showMessageDialog("Can't bind with " + port + " port. RemoteCall plugin won't work", "RemoteCall Plugin Error",
-                                     Messages.getErrorIcon());
-        }
-      });
+      ApplicationManager.getApplication().invokeLater(() -> Messages
+        .showMessageDialog("Can't bind with " + port + " port. RemoteCall plugin won't work", "RemoteCall Plugin Error",
+                           Messages.getErrorIcon()));
       return;
     }
 
-    MessageNotifier messageNotifier = new SocketMessageNotifier(serverSocket);
-    messageNotifier.addMessageHandler(new OpenFileMessageHandler(new FileNavigatorImpl()));
+    RequestNotifier messageNotifier = new SocketNotifier(serverSocket);
+    messageNotifier.addRequestHandler(new OpenFileMessageHandler(new FileNavigatorImpl()));
     listenerThread = new Thread(messageNotifier);
     listenerThread.start();
   }
@@ -57,8 +54,7 @@ public class RemoteCallComponent implements ApplicationComponent {
         listenerThread.interrupt();
       }
       serverSocket.close();
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
