@@ -43,14 +43,15 @@ public class UpdateElement extends AnAction {
         return value.contains(data.getOldLocator()) && pageName.contains(data.getTarget());
       })
       .forEach(it->{
-        final String tmsLinkText = String.format("@PageAwareFindBy(page = \"%s\", findBy = @FindBy(css = \"%s\"))", data.getTarget(), data.getNewLocator());
-        final PsiAnnotation tmsLink = createAnnotation(tmsLinkText, it);
+        final String
+          PageAwareLinkText = String.format("@PageAwareFindBy(page = \"%s\", findBy = @FindBy(css = \"%s\"))", data.getTarget(), data.getNewLocator());
+        final PsiAnnotation tmsLink = createAnnotation(PageAwareLinkText, it);
         final Project project = it.getProject();
         CommandProcessor.getInstance().executeCommand(project, () -> ApplicationManager.getApplication().runWriteAction(() -> {
           it.getAnnotation(PAGE_AWARE_BY_ANNOTATION).delete();
           PsiModifierList modifierList = it.getModifierList();
           modifierList.add(tmsLink);
-        }), "Migrate Allure TestCaseId", null);
+        }), "Updated locator in PageAwareFindBy annotation", null);
       });
   }
 
