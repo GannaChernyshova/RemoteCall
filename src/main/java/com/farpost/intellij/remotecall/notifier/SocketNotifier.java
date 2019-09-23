@@ -69,7 +69,7 @@ public class SocketNotifier implements RequestNotifier {
           while ((inputLine = in.readLine()) != null && !inputLine.equals(CRLF) && !inputLine.equals(NL) && !inputLine.isEmpty()) {
             requestString.append(inputLine);
           }
-          clientSocket.getOutputStream().write(("HTTP/1.1 204 No Content" + CRLF + CRLF).getBytes(StandardCharsets.UTF_8.name()));
+          clientSocket.getOutputStream().write(("HTTP/1.1 204 No Content" + CRLF + "Access-Control-Allow-Origin: *" + CRLF + CRLF).getBytes(StandardCharsets.UTF_8.name()));
           clientSocket.close();
 
           StringTokenizer tokenizer = new StringTokenizer(requestString.toString());
